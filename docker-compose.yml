@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  scraper:
+    build:
+      context: scraper
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: PCNS
+      DB_USER: postgres
+      DB_PASSWORD: password
+      ENDPOINT: https://www.pcns.co.za/Search/Verify
+      WORKERS: 64
+      CHUNK_SIZE: 20
+      START_ID: 1000000
+      END_ID: 9999999
+    volumes:
+      - ./logs:/app/logs
+  db:
+    build:
+      context: db
+      dockerfile: Dockerfile
+    # command: -c 'max_connections=96'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: PCNS
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
